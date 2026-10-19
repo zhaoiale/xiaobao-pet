@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 5,
+  "app": { "name": "小宝桌宠", "appId": "com.doubao.xiaobao.pet", "version": "1.0.0", "language": "zh-CN" },
+  "targets": { "windows": { "enabled": true, "arch": "x64" }, "macos": { "enabled": false, "arch": "current" } },
+  "character": {
+    "inputType": "single-image",
+    "coreAsset": "core-ip/core-ip.png",
+    "displayName": "小宝",
+    "archetype": "dog",
+    "personality": ["慵懒", "温顺", "亲人", "贪吃"],
+    "preserveTraits": ["浅黄褐色短毛", "深黑色口鼻面罩斑纹", "深色眼周", "垂耳", "面部褶皱", "松弛嘴皮", "壮硕体格"],
+    "style": "preserve",
+    "mirrorSafe": false
+  },
+  "assetPipeline": {
+    "backgroundMode": "semantic-cutout",
+    "segmentationBackend": "rembg",
+    "subjectKind": "photo",
+    "generationBackground": "transparent-grid",
+    "backgroundTolerance": 28,
+    "edgeFeather": 12,
+    "safeMargin": 24,
+    "targetOccupancy": 0.78
+  },
+  "experience": {
+    "theme": { "primary": "#C89B6C", "accent": "#8A5A33", "background": "#FBF3E9", "surface": "#FFF9F0", "text": "#3A2E22", "muted": "#9C8674", "cornerRadius": 20 },
+    "petSizing": { "baseWindowPx": 220, "defaultScale": 0.8 },
+    "interactions": [
+      { "id": "chin-scratch", "emoji": "🖐️", "label": "挠下巴", "stateId": "chin-scratch", "durationMs": 2200, "affectionGain": 6, "feedback": ["呼噜呼噜…下巴好舒服", "再挠两下嘛~", "这手法，专业！"] },
+      { "id": "feed-chew", "emoji": "🦴", "label": "喂磨牙棒", "stateId": "feed-chew", "durationMs": 2600, "affectionGain": 8, "feedback": ["咔嚓咔嚓…真香！", "嘴边都泛白沫啦，太投入了", "磨牙棒越啃越得劲~", "谢谢投喂，沫沫都是爱！"] },
+      { "id": "paw-shake", "emoji": "🤝", "label": "握手", "stateId": "paw-shake", "durationMs": 1800, "affectionGain": 5, "feedback": ["大爪子给你！", "握手！小宝最乖~", "再来一次？"] },
+      { "id": "sleep", "emoji": "💤", "label": "睡觉", "stateId": "sleep", "durationMs": 4200, "affectionGain": 3, "feedback": ["呼…呼…先眯一会儿", "梦到磨牙棒了…", "呼噜呼噜…"] },
+      { "id": "walk", "emoji": "🚶", "label": "散步", "stateId": "walk", "durationMs": 6000, "affectionGain": 2, "feedback": ["走两步活动活动~", "溜达溜达真舒服", "汪！散步去！", "累了就歇会儿"] }
+    ]
+  },
+  "motion": {
+    "breathing": { "enabled": true, "periodMs": 3200, "scaleX": 0.012, "scaleY": 0.022 },
+    "squashStretch": { "enabled": true, "durationMs": 320, "intensity": 0.08 },
+    "idleIntervalMs": { "min": 7000, "max": 13000 }
+  },
+  "features": {
+    "transparentWindow": true, "drag": true, "tray": true, "edgeSnap": true, "reminders": true, "interactions": true,
+    "relationship": true, "filePocket": false, "dashboard": true, "typingReaction": false, "autonomousMovement": false
+  },
+  "states": [
+    { "id": "idle", "triggers": ["app:start", "ambient:idle"], "frames": ["idle-01.png", "idle-02.png", "idle-03.png", "idle-04.png", "idle-05.png"], "frameDurationMs": 900, "loop": true, "priority": 10, "interrupt": "resume", "cooldownMs": 0, "direction": "neutral", "anchor": { "x": 0.5, "y": 0.95 }, "mirrorSafe": false },
+    { "id": "blink", "triggers": ["ambient:blink"], "frames": ["blink-01.png", "blink-02.png", "blink-03.png", "blink-04.png", "blink-05.png"], "frameDurationMs": 75, "loop": false, "priority": 30, "interrupt": "restart", "cooldownMs": 2500, "direction": "neutral", "anchor": { "x": 0.5, "y": 0.95 }, "mirrorSafe": false },
+    { "id": "happy", "triggers": ["pointer:tap"], "frames": ["happy-01.png", "happy-02.png", "happy-03.png", "happy-04.png", "happy-05.png"], "frameDurationMs": 110, "loop": false, "priority": 70, "interrupt": "restart", "cooldownMs": 300, "direction": "neutral", "anchor": { "x": 0.5, "y": 0.95 }, "mirrorSafe": false },
+    { "id": "notify", "triggers": ["reminder:due"], "frames": ["notify-01.png", "notify-02.png", "notify-03.png", "notify-04.png", "notify-05.png"], "frameDurationMs": 120, "loop": false, "priority": 95, "interrupt": "restart", "cooldownMs": 800, "direction": "neutral", "anchor": { "x": 0.5, "y": 0.95 }, "mirrorSafe": false },
+    { "id": "peek", "triggers": ["window:edge-snap"], "frames": ["peek-01.png", "peek-02.png", "peek-03.png", "peek-04.png", "peek-05.png"], "frameDurationMs": 120, "loop": false, "priority": 55, "interrupt": "resume", "cooldownMs": 1800, "direction": "neutral", "anchor": { "x": 0.5, "y": 0.95 }, "mirrorSafe": false },
+    { "id": "chin-scratch", "triggers": ["interaction:chin-scratch"], "frames": ["chin-scratch-01.png", "chin-scratch-02.png", "chin-scratch-03.png", "chin-scratch-04.png", "chin-scratch-05.png", "chin-scratch-06.png"], "frameDurationMs": 130, "loop": true, "priority": 85, "interrupt": "restart", "cooldownMs": 250, "direction": "neutral", "anchor": { "x": 0.5, "y": 0.95 }, "mirrorSafe": false },
+    { "id": "feed-chew", "triggers": ["interaction:feed-chew"], "frames": ["feed-chew-01.png", "feed-chew-02.png", "feed-chew-03.png", "feed-chew-04.png", "feed-chew-05.png", "feed-chew-06.png"], "frameDurationMs": 140, "loop": true, "priority": 85, "interrupt": "restart", "cooldownMs": 300, "direction": "neutral", "anchor": { "x": 0.5, "y": 0.95 }, "mirrorSafe": false },
+    { "id": "paw-shake", "triggers": ["interaction:paw-shake"], "frames": ["paw-shake-01.png", "paw-shake-02.png", "paw-shake-03.png", "paw-shake-04.png", "paw-shake-05.png", "paw-shake-06.png"], "frameDurationMs": 120, "loop": true, "priority": 85, "interrupt": "restart", "cooldownMs": 250, "direction": "neutral", "anchor": { "x": 0.5, "y": 0.95 }, "mirrorSafe": false },
+    { "id": "sleep", "triggers": ["interaction:sleep"], "frames": ["sleep-01.png", "sleep-02.png", "sleep-03.png", "sleep-04.png", "sleep-05.png", "sleep-06.png"], "frameDurationMs": 420, "loop": true, "priority": 60, "interrupt": "resume", "cooldownMs": 2000, "direction": "neutral", "anchor": { "x": 0.5, "y": 0.95 }, "mirrorSafe": false },
+    { "id": "walk", "triggers": ["interaction:walk", "ambient:random"], "frames": ["walk-01.png", "walk-02.png", "walk-03.png", "walk-04.png", "walk-05.png", "walk-06.png"], "frameDurationMs": 150, "loop": true, "priority": 65, "interrupt": "restart", "cooldownMs": 2000, "direction": "right", "anchor": { "x": 0.5, "y": 0.95 }, "mirrorSafe": true }
+  ],
+  "storage": { "userData": "app-user-data", "filePocket": "documents-app-name" },
+  "build": { "windows": { "arch": "x64", "installer": "squirrel", "portable": "zip" }, "macos": { "arch": "current", "diskImage": "dmg", "portable": "zip" }, "timeoutMinutes": 30, "unsigned": true }
+}
