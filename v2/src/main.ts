@@ -1,11 +1,9 @@
 import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, shell, Tray, type IpcMainInvokeEvent } from 'electron';
 import { copyFile, lstat, mkdir, readFile } from 'node:fs/promises';
-import { execFile } from 'node:child_process';
-import os from 'node:os';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import specData from '../pet-spec.json';
-import type { InteractionResult, PetSpec, PetStats, Reminder, RuntimeFailureReport, RuntimeReadyReport, Settings, StateActivity, SysStatus, TypingStatus } from './shared/contracts';
+import type { InteractionResult, PetSpec, PetStats, Reminder, RuntimeFailureReport, RuntimeReadyReport, Settings, StateActivity, TypingStatus } from './shared/contracts';
 import { assertInteractionId, assertReminderInput, assertRuntimeFailureReport, assertRuntimeReadyReport, assertSettingsPatch, assertStringArray } from './shared/contracts';
 import { randomTip } from './shared/dev-tips';
 import { draggedBounds, snapBounds, type Point, type Rect } from './main/drag';
@@ -49,12 +47,6 @@ const WALK_SPEED_PX = 72;
 const WALK_DURATION_MS = 6000;
 const AUTO_WALK_MIN_MS = 4 * 60_000;
 const AUTO_WALK_MAX_MS = 9 * 60_000;
-
-// 系统状态监控
-let sysTimer: ReturnType<typeof setInterval> | undefined;
-let prevCpuTimes = os.cpus().map((cpu) => cpu.times);
-let cachedDiskPercent = -1;
-let lastSysStatus: SysStatus = { cpuPercent: 0, memPercent: 0, diskPercent: -1 };
 
 // 程序员技巧自动提示
 let tipTimer: ReturnType<typeof setTimeout> | undefined;
@@ -102,12 +94,14 @@ function scheduleDailyRhythm(): void {
     if (!settings.dailyRhythm) return;
     if (!petWindow || petWindow.isDestroyed() || !petWindow.isVisible()) return;
     if (isNightHour()) {
+      // 夜晚：每晚只自动入睡一次；用户手动唤醒后保持清醒，直到次日再自动睡。
       const today = localDateKeyOf();
       if (lastNightSleepDate !== today) {
         lastNightSleepDate = today;
         enterSleepForNight();
       }
     } else {
+      // 白天：若昨晚睡过则先唤醒，然后偶尔自主吃磨牙棒。
       if (lastNightSleepDate !== '') {
         lastNightSleepDate = '';
         wakeUpForMorning();
@@ -119,7 +113,6 @@ function scheduleDailyRhythm(): void {
     }
   }, 30_000);
 }
-
 const expectedRuntimeAssets = new Set([spec.character.coreAsset, ...spec.states.flatMap((state) => state.frames)]);
 const runtimeReadyFile = path.join(process.cwd(), '.build', 'runtime-ready.json');
 const runtimeFailureFile = path.join(process.cwd(), '.build', 'runtime-failed.json');
@@ -134,7 +127,6 @@ const defaultSettings: Settings = {
   typingReaction: spec.features.typingReaction,
   clickThrough: false,
   petScale: spec.experience.petSizing.defaultScale,
-  sysMonitor: true,
   walkEnabled: true,
   dailyRhythm: true,
 };
@@ -460,65 +452,6 @@ function showDashboard(): void {
   broadcastStats();
 }
 
-// ===== 系统状态监控 =====
-function sampleCpuPercent(): number {
-  const current = os.cpus().map((cpu) => cpu.times);
-  let idleDelta = 0;
-  let totalDelta = 0;
-  for (let index = 0; index < current.length; index += 1) {
-    const now = current[index]!;
-    const before = prevCpuTimes[index] ?? now;
-    idleDelta += now.idle - before.idle;
-    totalDelta += (now.user + now.nice + now.sys + now.idle + now.irq) - (before.user + before.nice + before.sys + before.idle + before.irq);
-  }
-  prevCpuTimes = current;
-  if (totalDelta <= 0) return 0;
-  return Math.max(0, Math.min(100, Math.round((1 - idleDelta / totalDelta) * 100)));
-}
-
-function refreshDiskPercent(): void {
-  execFile('wmic', ['logicaldisk', 'where', 'DriveType=3', 'get', 'Size,FreeSpace', '/format:csv'], { windowsHide: true, timeout: 5000 }, (error, stdout) => {
-    if (error || !stdout) { cachedDiskPercent = -1; return; }
-    const lines = stdout.split(/\r?\n/).filter((line) => /^\S+,\d+,\d+$/.test(line.trim()));
-    if (!lines.length) { cachedDiskPercent = -1; return; }
-    let total = 0;
-    let free = 0;
-    for (const line of lines) {
-      const parts = line.trim().split(',');
-      const size = Number(parts[1]);
-      const freeSpace = Number(parts[2]);
-      if (Number.isFinite(size) && Number.isFinite(freeSpace) && size > 0) {
-        total += size;
-        free += freeSpace;
-      }
-    }
-    cachedDiskPercent = total > 0 ? Math.max(0, Math.min(100, Math.round((1 - free / total) * 100))) : -1;
-  });
-}
-
-function readSysStatus(): SysStatus {
-  const memPercent = os.totalmem() > 0 ? Math.round((1 - os.freemem() / os.totalmem()) * 100) : 0;
-  lastSysStatus = { cpuPercent: sampleCpuPercent(), memPercent, diskPercent: cachedDiskPercent };
-  return lastSysStatus;
-}
-
-function broadcastSysStatus(): void {
-  if (!settings.sysMonitor) return;
-  const status = readSysStatus();
-  for (const window of [petWindow, reminderWindow, dashboardWindow]) {
-    if (window && !window.isDestroyed()) window.webContents.send('sys:status', status);
-  }
-}
-
-function startSysMonitor(): void {
-  if (sysTimer) clearInterval(sysTimer);
-  refreshDiskPercent();
-  sysTimer = setInterval(() => {
-    refreshDiskPercent();
-    broadcastSysStatus();
-  }, 3000);
-}
-
 // ===== 散步（手动触发 + 自动随机）=====
 function notifyWalkDirection(): void {
   if (petWindow && !petWindow.isDestroyed()) petWindow.webContents.send('walk:direction', walkDirection);
@@ -585,6 +518,7 @@ function scheduleAutoWalk(): void {
       scheduleAutoWalk();
       return;
     }
+    // 作息模式开启时，夜晚不散步，避免吵醒睡眠中的小宝。
     if (settings.dailyRhythm && isNightHour()) {
       scheduleAutoWalk();
       return;
@@ -632,7 +566,6 @@ function buildPetMenu(): Electron.MenuItemConstructorOptions[] {
   if (spec.features.filePocket) items.push({ label: '📁 打开文件口袋', click: () => void openPocket() });
   items.push({ type: 'separator' });
   items.push({ label: '💡 程序员小技巧', click: () => showTip(randomTip()) });
-  items.push({ label: settings.sysMonitor ? '📊 系统状态：开' : '📊 系统状态：关', click: () => void saveSettings({ ...settings, sysMonitor: !settings.sysMonitor }) });
   items.push({ label: settings.walkEnabled ? '🐾 自动散步：开' : '🐾 自动散步：关', click: () => void saveSettings({ ...settings, walkEnabled: !settings.walkEnabled }) });
   items.push({ label: settings.dailyRhythm ? '🌙 作息模式：开' : '🌙 作息模式：关', click: () => void saveSettings({ ...settings, dailyRhythm: !settings.dailyRhythm }) });
   items.push({ type: 'separator' });
@@ -664,7 +597,6 @@ async function saveSettings(next: Settings): Promise<Settings> {
   applyPetSettings();
   restartTypingListener();
   createTrayMenuRefresh();
-  if (settings.sysMonitor) startSysMonitor();
   if (!settings.walkEnabled) stopWalking('walk-disabled');
   return settings;
 }
@@ -877,11 +809,6 @@ function registerIpc(): void {
     assertSender(event, ['pet']);
     return toggleWalk();
   });
-  ipcMain.handle('sys:status', (event) => {
-    assertSender(event, ['pet', 'dashboard']);
-    refreshDiskPercent();
-    return readSysStatus();
-  });
   ipcMain.handle('tips:random', (event) => {
     assertSender(event, ['pet', 'dashboard']);
     return randomTip();
@@ -902,7 +829,6 @@ async function initialize(): Promise<void> {
   createTray();
   reminders.forEach(scheduleReminder);
   restartTypingListener();
-  if (settings.sysMonitor) startSysMonitor();
   scheduleAutoWalk();
   scheduleAutoTip();
   scheduleDailyRhythm();
@@ -932,7 +858,6 @@ app.on('before-quit', (event) => {
   for (const timer of reminderTimers.values()) clearTimeout(timer);
   reminderTimers.clear();
   stopWalking('quit');
-  if (sysTimer) clearInterval(sysTimer);
   if (autoWalkTimer) clearTimeout(autoWalkTimer);
   if (tipTimer) clearTimeout(tipTimer);
   if (dailyRhythmTimer) clearInterval(dailyRhythmTimer);

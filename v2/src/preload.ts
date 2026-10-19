@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
-import type { InteractionResult, InteractionSpec, PetAPI, PetStats, Reminder, RuntimeFailureReport, RuntimeReadyReport, Settings, StateActivity, SysStatus, TypingStatus } from './shared/contracts';
+import type { InteractionResult, InteractionSpec, PetAPI, PetStats, Reminder, RuntimeFailureReport, RuntimeReadyReport, Settings, StateActivity, TypingStatus } from './shared/contracts';
 
 function subscribe<T>(channel: string, listener: (value: T) => void): () => void {
   const wrapped = (_event: Electron.IpcRendererEvent, value: T) => listener(value);
@@ -41,9 +41,6 @@ const api: PetAPI = {
   walk: {
     toggle: () => ipcRenderer.invoke('walk:toggle') as Promise<boolean>,
   },
-  sys: {
-    status: () => ipcRenderer.invoke('sys:status') as Promise<SysStatus>,
-  },
   tips: {
     random: () => ipcRenderer.invoke('tips:random') as Promise<string>,
   },
@@ -57,7 +54,6 @@ const api: PetAPI = {
     onReminderCompose: (listener) => subscribe<void>('reminder:compose', listener),
     onStats: (listener) => subscribe<PetStats>('pet:stats', listener),
     onTypingStatus: (listener) => subscribe<TypingStatus>('typing:status', listener),
-    onSysStatus: (listener) => subscribe<SysStatus>('sys:status', listener),
     onWalkDirection: (listener) => subscribe<'left' | 'right'>('walk:direction', listener),
     onTip: (listener) => subscribe<string>('tip:show', listener),
   },

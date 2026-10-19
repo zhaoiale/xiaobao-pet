@@ -25,9 +25,9 @@ export function localDateKey(date = new Date()): string {
 
 export function parseSettings(value: unknown): Settings {
   const obj = record(value, 'settings');
-  const expected = new Set(['edgeSnap', 'alwaysOnTop', 'typingReaction', 'clickThrough', 'petScale', 'sysMonitor', 'walkEnabled', 'dailyRhythm']);
+  const expected = new Set(['edgeSnap', 'alwaysOnTop', 'typingReaction', 'clickThrough', 'petScale', 'walkEnabled', 'dailyRhythm']);
   for (const key of Object.keys(obj)) if (!expected.has(key)) throw new TypeError(`Unknown settings field: ${key}`);
-  for (const key of ['edgeSnap', 'alwaysOnTop', 'typingReaction', 'clickThrough', 'sysMonitor', 'walkEnabled', 'dailyRhythm'] as const) {
+  for (const key of ['edgeSnap', 'alwaysOnTop', 'typingReaction', 'clickThrough', 'walkEnabled', 'dailyRhythm'] as const) {
     if (obj[key] !== undefined && typeof obj[key] !== 'boolean') throw new TypeError(`Invalid settings field: ${key}`);
   }
   if (obj.petScale !== undefined && (typeof obj.petScale !== 'number' || !Number.isFinite(obj.petScale) || !PET_SCALES.includes(obj.petScale as typeof PET_SCALES[number]))) {
@@ -39,7 +39,6 @@ export function parseSettings(value: unknown): Settings {
     typingReaction: obj.typingReaction as boolean,
     clickThrough: obj.clickThrough as boolean,
     petScale: obj.petScale === undefined ? 0.8 : (obj.petScale as number),
-    sysMonitor: obj.sysMonitor === undefined ? true : (obj.sysMonitor as boolean),
     walkEnabled: obj.walkEnabled === undefined ? true : (obj.walkEnabled as boolean),
     dailyRhythm: obj.dailyRhythm === undefined ? true : (obj.dailyRhythm as boolean),
   };

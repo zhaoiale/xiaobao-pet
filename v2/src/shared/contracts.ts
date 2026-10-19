@@ -1,7 +1,15 @@
 export interface PetSpec {
   schemaVersion: number;
-  app: { name: string; appId: string; version: string; language: string };
-  targets: { windows: { enabled: boolean; arch: string }; macos: { enabled: boolean; arch: string } };
+  app: {
+    name: string;
+    appId: string;
+    version: string;
+    language: string;
+  };
+  targets: {
+    windows: { enabled: boolean; arch: string };
+    macos: { enabled: boolean; arch: string };
+  };
   character: {
     inputType: string;
     coreAsset: string;
@@ -23,8 +31,19 @@ export interface PetSpec {
     targetOccupancy: number;
   };
   experience: {
-    theme: { primary: string; accent: string; background: string; surface: string; text: string; muted: string; cornerRadius: number };
-    petSizing: { baseWindowPx: number; defaultScale: number };
+    theme: {
+      primary: string;
+      accent: string;
+      background: string;
+      surface: string;
+      text: string;
+      muted: string;
+      cornerRadius: number;
+    };
+    petSizing: {
+      baseWindowPx: number;
+      defaultScale: number;
+    };
     interactions: InteractionSpec[];
   };
   motion: {
@@ -46,8 +65,16 @@ export interface PetSpec {
     autonomousMovement: boolean;
   };
   states: PetState[];
-  storage: { userData: string; filePocket: string };
-  build: { windows: { arch: string; installer: string; portable: string }; macos: { arch: string; diskImage: string; portable: string }; timeoutMinutes: number; unsigned: boolean };
+  storage: {
+    userData: string;
+    filePocket: string;
+  };
+  build: {
+    windows: { arch: string; installer: string; portable: string };
+    macos: { arch: string; diskImage: string; portable: string };
+    timeoutMinutes: number;
+    unsigned: boolean;
+  };
 }
 
 export interface InteractionSpec {
@@ -88,15 +115,8 @@ export interface Settings {
   typingReaction: boolean;
   clickThrough: boolean;
   petScale: number;
-  sysMonitor: boolean;
   walkEnabled: boolean;
   dailyRhythm: boolean;
-}
-
-export interface SysStatus {
-  cpuPercent: number;
-  memPercent: number;
-  diskPercent: number;
 }
 
 export interface Reminder {
@@ -123,7 +143,11 @@ export interface RuntimeReadyReport {
   naturalHeight: number;
   petVisible: boolean;
   ipcReady: boolean;
-  renderers?: { pet: boolean; dashboard: boolean; reminder: boolean };
+  renderers?: {
+    pet: boolean;
+    dashboard: boolean;
+    reminder: boolean;
+  };
 }
 
 export interface RuntimeFailureReport {
@@ -142,9 +166,20 @@ export interface TypingStatus {
 }
 
 export interface PetAPI {
-  settings: { get: () => Promise<Settings>; update: (patch: Partial<Settings>) => Promise<Settings> };
-  reminders: { list: () => Promise<Reminder[]>; save: (input: { text: string; dueAt: string }) => Promise<Reminder>; remove: (id: string) => Promise<boolean> };
-  interactions: { list: () => Promise<InteractionSpec[]>; trigger: (id: string) => Promise<InteractionResult>; stats: () => Promise<PetStats> };
+  settings: {
+    get: () => Promise<Settings>;
+    update: (patch: Partial<Settings>) => Promise<Settings>;
+  };
+  reminders: {
+    list: () => Promise<Reminder[]>;
+    save: (input: { text: string; dueAt: string }) => Promise<Reminder>;
+    remove: (id: string) => Promise<boolean>;
+  };
+  interactions: {
+    list: () => Promise<InteractionSpec[]>;
+    trigger: (id: string) => Promise<InteractionResult>;
+    stats: () => Promise<PetStats>;
+  };
   files: {
     getPathForFile: (file: File) => string;
     put: (paths: string[]) => Promise<{ copied: string[]; failed: Array<{ source: string; reason: string }> }>;
@@ -161,9 +196,12 @@ export interface PetAPI {
     hideDashboard: () => Promise<void>;
     hidePet: () => Promise<void>;
   };
-  walk: { toggle: () => Promise<boolean> };
-  sys: { status: () => Promise<SysStatus> };
-  tips: { random: () => Promise<string> };
+  walk: {
+    toggle: () => Promise<boolean>;
+  };
+  tips: {
+    random: () => Promise<string>;
+  };
   runtime: {
     ready: (report: RuntimeReadyReport) => Promise<void>;
     fail: (report: RuntimeFailureReport) => Promise<void>;
@@ -174,7 +212,6 @@ export interface PetAPI {
     onReminderCompose: (listener: () => void) => () => void;
     onStats: (listener: (stats: PetStats) => void) => () => void;
     onTypingStatus: (listener: (status: TypingStatus) => void) => () => void;
-    onSysStatus: (listener: (status: SysStatus) => void) => () => void;
     onWalkDirection: (listener: (direction: 'left' | 'right') => void) => () => void;
     onTip: (listener: (tip: string) => void) => () => void;
   };
@@ -212,7 +249,7 @@ export function assertSettingsPatch(value: unknown): asserts value is Partial<Se
     throw new TypeError('Invalid settings patch');
   }
   const obj = value as Record<string, unknown>;
-  const booleanKeys = new Set(['edgeSnap', 'alwaysOnTop', 'typingReaction', 'clickThrough', 'sysMonitor', 'walkEnabled', 'dailyRhythm']);
+  const booleanKeys = new Set(['edgeSnap', 'alwaysOnTop', 'typingReaction', 'clickThrough', 'walkEnabled', 'dailyRhythm']);
   const allowedKeys = new Set([...booleanKeys, 'petScale']);
   for (const [key, item] of Object.entries(obj)) {
     if (!allowedKeys.has(key)) throw new TypeError(`Unknown settings field: ${key}`);
