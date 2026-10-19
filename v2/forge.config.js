@@ -48,6 +48,7 @@ module.exports = {
     appBundleId: spec.app.appId,
     name: spec.app.name,
     executableName: spec.app.name,
+    icon: path.resolve(__dirname, 'build', 'icon.ico'),
     osxSign: false,
     download: process.env.PET_VERIFIED_ELECTRON_CACHE === '1' ? {
       cacheRoot: process.env.PET_ELECTRON_CACHE_ROOT,
